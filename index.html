@@ -3,87 +3,415 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPR Processing Tool</title>
-    
-    <!-- Bootstrap CSS -->
+    <title>POD Tools Hub</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Required libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body class="bg-light">
-    <div class="container py-4">
-        <div class="row justify-content-center">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">PPR Processing Tool</h4>
-                        <div>
-                            <button class="btn btn-outline-light me-2" onclick="clearAll()" id="clearBtn" disabled>
-                                Clear All
-                            </button>
-                            <button class="btn btn-outline-light" onclick="downloadCsv()" id="downloadBtn" disabled>
-                                Download PPR
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="card h-100 shadow-sm">
-                                    <div class="card-header bg-light">
-                                        <h5 class="card-title mb-0">File Processing</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="excelFile" class="form-label">Upload Excel File</label>
-                                            <input type="file" class="form-control" id="excelFile" accept=".xlsx,.xls">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="alert alert-info mt-md-4" id="status" style="display: none;"></div>
-                        </div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-                        <!-- Preview Table -->
-                        <div class="mb-3">
-                            <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
-                                <i class="fas fa-trash"></i> Delete Selected Rows
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover" id="previewTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>
-                                            <input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes()">
-                                        </th>
-                                        <th>Action</th>
-                                        <th>Reference</th>
-                                        <th>Line #</th>
-                                        <th>ISBN</th>
-                                        <th>Status</th>
-                                        <th>Result</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="previewBody">
-                                    <tr>
-                                        <td colspan="7" class="text-center">No data loaded</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: linear-gradient(180deg, #000000 0%, #121212 100%);
+            color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .tool-card {
+            transition: transform 0.2s;
+            background-color: #ffffff;
+        }
+        .dark-mode .tool-card {
+            background-color: #333333;
+            color: #ffffff;
+            border-color: #404040;
+        }
+        .tool-card:hover {
+            transform: translateY(-3px);
+        }
+        .card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #0d6efd;
+        }
+        .dark-mode .card-icon {
+            color: #3d8bfd;
+        }
+        .tools-container {
+            max-width: 1600px;
+        }
+        .card-body {
+            padding: 1rem;
+        }
+        .card-title {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .card-text {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .bg-primary {
+            background: linear-gradient(180deg, #0a58ca 0%, #0d6efd 100%) !important;
+        }
+        .bi-wrench {
+            transform: scaleX(-1);
+        }
+        .theme-toggle {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            aspect-ratio: 1;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Badge style */
+        .dev-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-3 bg-primary text-white">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="invisible" style="width: 200px">Spacer</div>
+            <h1 class="h3 mb-0 fw-bold text-center flex-grow-1">POD Tools Hub <i class="bi bi-wrench ms-2"></i></h1>
+            <div class="d-flex justify-content-end pe-4 align-items-center" style="width: 200px;">
+                <div class="theme-toggle me-3" onclick="toggleTheme()">
+                    <i class="bi bi-sun-fill text-white"></i>
                 </div>
+                <a href="http://192.168.10.233:51089/#/app/submitpoints" class="btn btn-light me-2 px-3 d-flex align-items-center" target="_blank">Switch<i class="bi bi-caret-right-square ms-2"></i></a>
+                <a href="http://192.168.10.251/epace/login.html" class="btn btn-warning px-3 d-flex align-items-center" target="_blank">PACE<i class="bi bi-caret-right-square ms-2"></i></a>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap Bundle with Popper -->
+    <div class="container tools-container py-3">
+        <div class="row g-3">
+            <!-- Item Template Creator -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text card-icon"></i>
+                        <h5 class="card-title">Item Template Creator</h5>
+                        <p class="card-text">Create POD Item Templates</p>
+                        <a href="https://tjintranet.github.io/POD-Item-Template-Creator/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Processing -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-gear card-icon"></i>
+                        <h5 class="card-title">Manual Order Processing</h5>
+                        <p class="card-text">Process POD orders</p>
+                        <a href="https://tjintranet.github.io/POD-Order-Processing-Tool/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volume Set Creator -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-book card-icon"></i>
+                        <h5 class="card-title">Volume Set Creator</h5>
+                        <p class="card-text">Create Volume Sets in PACE</p>
+                        <a href="https://tjintranet.github.io/Volume-Set-Manager/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ulverscroft Template -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-file-earmark-text card-icon"></i>
+                        <h5 class="card-title">Ulverscroft Item Templates</h5>
+                        <p class="card-text">Create Ulverscroft Item Templates</p>
+                        <a href="https://tjintranet.github.io/Ulverscroft-Item-Template-Creator/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POD Availability -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle card-icon"></i>
+                        <h5 class="card-title">POD Availability</h5>
+                        <p class="card-text">Check POD Availability</p>
+                        <a href="https://tjintranet.github.io/tj-pod-availabilty/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Volume Set Search -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle card-icon"></i>
+                        <h5 class="card-title">Volume Set Search</h5>
+                        <p class="card-text">Input Set ISBN to return volumes</p>
+                        <a href="https://tjintranet.github.io/Volume-Set-Search/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+             <!-- Vol Set Reverse Search Tool -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-search card-icon"></i>
+                        <h5 class="card-title">Vol Set Reverse Search</h5>
+                        <p class="card-text">Match Vol Sets to Order Report</p>
+                        <a href="https://tjintranet.github.io/Volume-Sets-Reverse-Search_Tool/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>            
+
+            <!-- TF Metadata Editor -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-pencil-square card-icon"></i>
+                        <h5 class="card-title">TF Metadata Editor</h5>
+                        <p class="card-text">Edit T&F Metadata</p>
+                        <a href="https://tjintranet.github.io/TF-Metadata-Editor/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DHL Order CSV 
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-truck card-icon"></i>
+                        <h5 class="card-title">DHL Order CSV</h5>
+                        <p class="card-text">Create DHL Orders CSV</p>
+                        <a href="https://tjintranet.github.io/Create-DHL-Order-CSV/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div> -->
+       
+            <!-- Batch Size Validator -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check2-all card-icon"></i>
+                        <h5 class="card-title">T&F Batch Validator</h5>
+                        <p class="card-text">Validate Batch Sizes</p>
+                        <a href="https://tjintranet.github.io/TF-POD-Batch-Size-Validator/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+          <!-- TF POD Product Spec-Validator -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check2-all card-icon"></i>
+                        <h5 class="card-title">T&F Product Validation</h5>
+                        <p class="card-text">Upload Metadata files</p>
+                        <a href="https://tjintranet.github.io/TF-POD-Product-Spec-Validator/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>         
+
+            <!-- History Press ASR POD Viewer -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-eye card-icon"></i>
+                        <h5 class="card-title">History Press Order Viewer</h5>
+                        <p class="card-text">View ASR POD Orders In</p>
+                        <a href="https://tjintranet.github.io/History-Press-ASR-POD-Viewer/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hachette Inbound Order -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-box-arrow-in-down card-icon"></i>
+                        <h5 class="card-title">Hachette Inbound</h5>
+                        <p class="card-text">Check Inbound Order</p>
+                        <a href="https://tjintranet.github.io/Hachette-Inbound-Order-Checker/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hachette Order Response -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle card-icon"></i>
+                        <h5 class="card-title">Hachette Response</h5>
+                        <p class="card-text">Check Order Response File</p>
+                        <a href="https://tjintranet.github.io/Hachette-Order-Response-Checker/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spine Size Calculator
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calculator-fill card-icon"></i>
+                        <h5 class="card-title">Spine Size Calculator</h5>
+                        <p class="card-text">Calculate Spine Sizes</p>
+                        <a href="https://tjintranet.github.io/Spine-Calculator/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>  -->
+
+    <!-- Create Hachette PBS file -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card tool-card">
+            <div class="card-body text-center">
+                <i class="bi bi-file-arrow-up card-icon"></i>
+                <h5 class="card-title">Make Hachette .PBS File</h5>
+                <p class="card-text">Update order notification</p>
+                <a href="https://tjintranet.github.io/Hachette-PBS/" class="btn btn-primary btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Hachette PPR file -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card tool-card">
+            <div class="card-body text-center">
+                <i class="bi bi-file-arrow-up card-icon"></i>
+                <h5 class="card-title">Make Hachette .PPR File</h5>
+                <p class="card-text">Update shipping notification</p>
+                <a href="https://tjintranet.github.io/Hachett-PPR/" class="btn btn-primary btn-sm">Open</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- XML Parser -->
+        <div class="col-md-4 col-lg-3">
+            <div class="card tool-card">
+                <div class="card-body text-center">
+                    <i class="bi bi-code-slash card-icon"></i>
+                    <h5 class="card-title">XML Parser</h5>
+                    <p class="card-text">Read XML Files</p>
+                    <a href="https://tjintranet.github.io/XML-Parser/" class="btn btn-primary btn-sm">Open</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cased POD Order Filter
+        <div class="col-md-4 col-lg-3">
+            <div class="card tool-card"> 
+                <div class="card-body text-center">
+                    <i class="bi bi-filter-circle card-icon"></i>
+                    <h5 class="card-title">Cased POD Order Filter</h5>
+                    <p class="card-text">Filter by Spine Size</p>
+                    <a href="https://tjintranet.github.io/Cased-POD-Filter/" class="btn btn-primary btn-sm">Open</a>
+                </div>
+            </div>
+        </div> -->        
+
+                <!-- IX POD Sheets Used 
+                <div class="col-md-4 col-lg-3">
+                    <div class="card tool-card"> 
+                        <div class="card-body text-center">
+                            <i class="bi bi-filter-circle card-icon"></i>
+                            <h5 class="card-title">IX POD Sheets Used</h5>
+                            <p class="card-text">Filter by Stock Used</p>
+                            <a href="https://tjintranet.github.io/IX-POD-Sheets-Used/" class="btn btn-primary btn-sm">Open</a>
+                        </div>
+                    </div>
+                </div> -->      
+
+                <!-- Clays POD Orders -->
+                <div class="col-md-4 col-lg-3">
+                    <div class="card tool-card"> 
+                        <div class="card-body text-center">
+                            <i class="bi bi-cart-check card-icon"></i>
+                            <h5 class="card-title">Clays POD Orders</h5>
+                            <p class="card-text">Create orders/Manage Repository</p>
+                            <a href="https://tjintranet.github.io/CLAYS-POD-Order-Processing-Tool/" class="btn btn-primary btn-sm">Open</a>
+                        </div>
+                    </div>
+                </div> 
+                
+                <!-- Clays Picklist - XML to Titan -->
+                <div class="col-md-4 col-lg-3">
+                    <div class="card tool-card"> 
+                        <div class="card-body text-center">
+                            <i class="bi bi-box-arrow-in-down card-icon"></i>
+                            <h5 class="card-title">Clays 1up to Titan</h5>
+                            <p class="card-text">Create Picklist & XML for Titan</p>
+                            <a href="https://tjintranet.github.io/Master-ID-Search/" class="btn btn-primary btn-sm">Open</a>
+                        </div>
+                    </div>
+                </div>  
+                
+             <!-- Clays POD CS WTL -->
+            <div class="col-md-4 col-lg-3">
+                <div class="card tool-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-box-arrow-in-down card-icon"></i>
+                        <h5 class="card-title">Clays POD CS WTL</h5>
+                        <p class="card-text">Create Batch WTL Clays POD</p>
+                        <a href="https://tjintranet.github.io/Clays-POD-CS-WTL/" class="btn btn-primary btn-sm">Open</a>
+                    </div>
+                </div>
+            </div>               
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.querySelector('.theme-toggle i');
+            
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                icon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+                localStorage.setItem('theme', 'dark');
+                document.body.style.background = 'linear-gradient(180deg, #000000 0%, #121212 100%)';
+            } else {
+                icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+                localStorage.setItem('theme', 'light');
+                document.body.style.background = '#f8f9fa';
+            }
+        }
+
+        // Check for saved theme preference
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.theme-toggle i').classList.replace('bi-sun-fill', 'bi-moon-fill');
+                document.body.style.backgroundColor = '#000000';
+            }
+        });
+    </script>
 </body>
 </html>
